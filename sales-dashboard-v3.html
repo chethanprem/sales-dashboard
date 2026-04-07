@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RevFlow — Sales Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d0f14;
+  --bg2:      #13161e;
+  --bg3:      #1a1e29;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.13);
+  --ink:      #eeecea;
+  --ink2:     #8b8fa8;
+  --ink3:     #50546a;
+  --emerald:  #00d4aa;
+  --gold:     #f5c842;
+  --red:      #ff5c6a;
+  --blue:     #5b8def;
+  --purple:   #a78bfa;
+  --sidebar-w:230px;
+  --radius:   13px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:14px;}
+body{background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;overflow-x:hidden;}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);min-height:100vh;display:flex;flex-direction:column;flex-shrink:0;position:fixed;left:0;top:0;bottom:0;z-index:50;padding:22px 0 20px;transition:transform 0.25s ease;}
+.sb-logo{padding:0 18px 20px;border-bottom:1px solid var(--border);}
+.sb-logo-name{font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-0.4px;}
+.sb-logo-name span{color:var(--emerald);}
+.sb-logo-tag{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink3);margin-top:3px;letter-spacing:2px;text-transform:uppercase;}
+.sb-group{padding:16px 10px 4px;}
+.sb-group-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);padding:0 8px;margin-bottom:5px;}
+.sb-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;margin-bottom:1px;position:relative;user-select:none;}
+.sb-item:hover{background:rgba(255,255,255,0.05);color:var(--ink);}
+.sb-item.active{background:rgba(0,212,170,0.1);color:var(--emerald);}
+.sb-item.active::before{content:'';position:absolute;left:0;top:22%;bottom:22%;width:3px;background:var(--emerald);border-radius:0 3px 3px 0;}
+.sb-icon{font-size:14px;width:18px;text-align:center;}
+.sb-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;font-family:'JetBrains Mono',monospace;}
+.sb-footer{margin-top:auto;padding:14px 10px 0;border-top:1px solid var(--border);}
+.sb-user{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;}
+.sb-avatar{width:30px;height:30px;background:linear-gradient(135deg,var(--emerald),var(--blue));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#0d0f14;flex-shrink:0;}
+.sb-uname{font-size:12px;font-weight:700;color:var(--ink);}
+.sb-urole{font-size:10px;color:var(--ink3);}
+
+/* ── Hamburger ── */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:7px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);}
+.hamburger span{display:block;width:18px;height:2px;background:var(--ink);border-radius:2px;}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:49;backdrop-filter:blur(2px);}
+.sidebar-overlay.active{display:block;}
+
+/* ── Main ── */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:rgba(13,15,20,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-0.3px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.year-select{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 10px;outline:none;cursor:pointer;}
+.period-tabs{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;}
+.period-tab{font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 11px;border-radius:6px;cursor:pointer;color:var(--ink2);transition:all 0.15s;border:none;background:none;}
+.period-tab.active{background:var(--emerald);color:#0d0f14;font-weight:700;}
+
+/* ── Content ── */
+.content{padding:24px 28px;flex:1;}
+.view-panel{display:none;}
+.view-panel.active{display:block;}
+
+/* ── KPI ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:all 0.2s;animation:fadeUp 0.4s ease both;}
+.kpi-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.kpi-card:nth-child(1){animation-delay:.05s}.kpi-card:nth-child(2){animation-delay:.10s}.kpi-card:nth-child(3){animation-delay:.15s}.kpi-card:nth-child(4){animation-delay:.20s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.kpi-glow{position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;filter:blur(36px);opacity:0.14;}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.kpi-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--ink3);}
+.kpi-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.kpi-value{font-size:26px;font-weight:800;letter-spacing:-0.8px;line-height:1;color:var(--ink);}
+.kpi-delta{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:10px;margin-top:7px;padding:3px 8px;border-radius:20px;}
+.kpi-delta.up{background:rgba(0,212,170,0.12);color:var(--emerald);}
+.kpi-delta.down{background:rgba(255,92,106,0.12);color:var(--red);}
+.kpi-sub{font-size:11px;color:var(--ink3);margin-top:4px;}
+
+/* ── Charts ── */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px;}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;animation:fadeUp 0.4s ease 0.25s both;}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.chart-title{font-size:13px;font-weight:700;color:var(--ink);}
+.chart-legend{display:flex;gap:12px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink2);}
+.legend-dot{width:8px;height:8px;border-radius:50%;}
+.chart-svg{width:100%;overflow:visible;}
+.axis-label{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#50546a;}
+.grid-line{stroke:rgba(255,255,255,0.04);stroke-width:1;}
+.line-path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.tooltip{position:fixed;background:var(--bg3);border:1px solid var(--border2);border-radius:9px;padding:9px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;pointer-events:none;display:none;z-index:200;box-shadow:0 8px 30px rgba(0,0,0,0.5);}
+.tooltip-title{font-size:10px;color:var(--ink3);margin-bottom:3px;}
+.tooltip-val{font-size:12px;font-weight:500;color:var(--emerald);}
+
+/* ── Donut ── */
+.donut-wrap{display:flex;flex-direction:column;align-items:center;}
+.donut-center{position:relative;margin-bottom:14px;}
+.donut-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.donut-total{font-size:16px;font-weight:800;color:var(--ink);}
+.donut-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink3);margin-top:2px;}
+.donut-legend{width:100%;display:flex;flex-direction:column;gap:7px;}
+.dl-item{display:flex;align-items:center;justify-content:space-between;}
+.dl-left{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);}
+.dl-bar-wrap{flex:1;margin:0 8px;height:3px;background:rgba(255,255,255,0.05);border-radius:99px;overflow:hidden;}
+.dl-bar{height:100%;border-radius:99px;}
+.dl-pct{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink3);}
+.dl-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+
+/* ── Bottom ── */
+.bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.prod-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);}
+.prod-item:last-child{border-bottom:none;}
+.prod-rank{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);width:16px;text-align:center;}
+.prod-info{flex:1;}
+.prod-name{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.prod-units{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink3);}
+.prod-bar-wrap{width:70px;height:4px;background:rgba(255,255,255,0.05);border-radius:99px;overflow:hidden;margin-right:8px;}
+.prod-bar{height:100%;border-radius:99px;}
+.prod-rev{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;color:var(--ink);min-width:55px;text-align:right;}
+.txn-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.txn-item:last-child{border-bottom:none;}
+.txn-avatar{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.txn-info{flex:1;}
+.txn-name{font-size:12px;font-weight:600;color:var(--ink);}
+.txn-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink3);margin-top:1px;}
+.txn-amount{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;}
+.txn-amount.pos{color:var(--emerald);}
+.txn-amount.neg{color:var(--red);}
+.status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* ── Monthly Report Table ── */
+.report-table{width:100%;border-collapse:collapse;}
+.report-table th{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg3);}
+.report-table td{padding:11px 16px;font-size:12px;border-bottom:1px solid var(--border);color:var(--ink2);}
+.report-table tr:last-child td{border-bottom:none;}
+.report-table tr:hover td{background:rgba(255,255,255,0.02);}
+.hit{color:var(--emerald);font-weight:600;}
+.miss{color:var(--red);font-weight:600;}
+
+/* ── Targets ── */
+.target-item{padding:16px;border-bottom:1px solid var(--border);}
+.target-item:last-child{border-bottom:none;}
+.target-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.target-name{font-size:13px;font-weight:700;color:var(--ink);}
+.target-vals{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.target-bar-bg{height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;}
+.target-bar-fill{height:100%;border-radius:99px;transition:width 0.8s ease;}
+.target-pct{font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:5px;}
+
+/* ── Customers ── */
+.cust-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);}
+.cust-item:last-child{border-bottom:none;}
+.cust-avatar{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.cust-info{flex:1;}
+.cust-name{font-size:13px;font-weight:700;color:var(--ink);}
+.cust-detail{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink3);margin-top:2px;}
+.cust-rev{text-align:right;}
+.cust-amount{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--emerald);}
+.cust-orders{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink3);margin-top:2px;}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:99px;}
+
+@media(max-width:1100px){.charts-row{grid-template-columns:1fr}.bottom-row{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){
+  .hamburger{display:flex;}
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0}.kpi-grid{grid-template-columns:1fr 1fr}.content{padding:16px 14px}
+  .topbar{padding:0 14px}
+}
+@media(max-width:480px){.kpi-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="tooltip" id="tooltip"><div class="tooltip-title" id="ttTitle"></div><div class="tooltip-val" id="ttVal"></div></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-name">Rev<span>Flow</span></div>
+    <div class="sb-logo-tag">Sales Analytics · 2024</div>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">Overview</div>
+    <div class="sb-item active" id="sb-dashboard" onclick="setView('dashboard',this)"><span class="sb-icon">📊</span> Dashboard</div>
+    <div class="sb-item" id="sb-revenue" onclick="setView('revenue',this)"><span class="sb-icon">💰</span> Revenue</div>
+    <div class="sb-item" id="sb-products" onclick="setView('products',this)"><span class="sb-icon">📦</span> Products</div>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">Analysis</div>
+    <div class="sb-item" id="sb-monthly" onclick="setView('monthly',this)"><span class="sb-icon">📅</span> Monthly Report</div>
+    <div class="sb-item" id="sb-targets" onclick="setView('targets',this)"><span class="sb-icon">🎯</span> Targets</div>
+    <div class="sb-item" id="sb-customers" onclick="setView('customers',this)"><span class="sb-icon">🤝</span> Customers</div>
+  </div>
+  <div class="sb-group">
+    <div class="sb-group-label">Export</div>
+    <div class="sb-item" onclick="alert('Export — coming soon!');closeSidebar()"><span class="sb-icon">📤</span> Export Report</div>
+  </div>
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="sb-avatar">CP</div>
+      <div>
+        <div class="sb-uname">Chethan Prem</div>
+        <div class="sb-urole">Sales Manager</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></div>
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <select class="year-select" id="yearSelect" onchange="rebuildAll()">
+        <option value="2024">FY 2024</option>
+        <option value="2023">FY 2023</option>
+      </select>
+      <div class="period-tabs">
+        <button class="period-tab active" onclick="setPeriod('monthly',this)">Monthly</button>
+        <button class="period-tab" onclick="setPeriod('quarterly',this)">Quarterly</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── DASHBOARD VIEW ── -->
+    <div class="view-panel active" id="view-dashboard">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title" id="revenueChartTitle">Revenue vs Target</div>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:var(--emerald)"></div>Revenue</div>
+              <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.2)"></div>Target</div>
+            </div>
+          </div>
+          <svg class="chart-svg" id="revenueChart" height="190" viewBox="0 0 580 190"></svg>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Product Mix</div></div>
+          <div class="donut-wrap">
+            <div class="donut-center">
+              <svg width="130" height="130" viewBox="0 0 130 130" id="donutSvg"></svg>
+              <div class="donut-text"><div class="donut-total" id="donutTotal">—</div><div class="donut-sub">TOTAL</div></div>
+            </div>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-row">
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">🏆 Top Products</div></div>
+          <div id="topProducts"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">🧾 Recent Transactions</div></div>
+          <div id="recentTxns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REVENUE VIEW ── -->
+    <div class="view-panel" id="view-revenue">
+      <div class="kpi-grid" id="kpiGrid2"></div>
+      <div class="chart-card" style="margin-bottom:14px">
+        <div class="chart-header">
+          <div class="chart-title">📈 Revenue Trend</div>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--emerald)"></div>Revenue</div>
+            <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.2)"></div>Target</div>
+          </div>
+        </div>
+        <svg class="chart-svg" id="revenueChart2" height="220" viewBox="0 0 700 220"></svg>
+      </div>
+    </div>
+
+    <!-- ── PRODUCTS VIEW ── -->
+    <div class="view-panel" id="view-products">
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">📦 All Products — Revenue Breakdown</div></div>
+        <div id="allProducts"></div>
+      </div>
+    </div>
+
+    <!-- ── MONTHLY REPORT VIEW ── -->
+    <div class="view-panel" id="view-monthly">
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">📅 Monthly Performance Report</div></div>
+        <div style="overflow-x:auto"><table class="report-table" id="monthlyTable"></table></div>
+      </div>
+    </div>
+
+    <!-- ── TARGETS VIEW ── -->
+    <div class="view-panel" id="view-targets">
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">🎯 Target Achievement by Period</div></div>
+        <div id="targetsContent"></div>
+      </div>
+    </div>
+
+    <!-- ── CUSTOMERS VIEW ── -->
+    <div class="view-panel" id="view-customers">
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">🤝 Top Customers</div></div>
+        <div id="customersContent"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<script>
+// ── DATA ──
+const DATA = {
+  2024:{
+    monthly:{
+      labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+      revenue:[420,385,510,475,620,580,710,670,590,740,810,920],
+      target: [400,420,450,480,520,550,580,620,650,680,720,780],
+    },
+    quarterly:{
+      labels:['Q1','Q2','Q3','Q4'],
+      revenue:[1315,1675,1970,2470],
+      target: [1270,1550,1850,2180],
+    },
+    products:[
+      {name:'HR Sheet',      rev:2840000,units:1420,color:'#00d4aa'},
+      {name:'CR Sheet',      rev:1950000,units:980, color:'#5b8def'},
+      {name:'GP Sheet',      rev:1320000,units:660, color:'#f5c842'},
+      {name:'MS Plate',      rev:980000, units:490, color:'#a78bfa'},
+      {name:'Angle/Channel', rev:610000, units:305, color:'#ff5c6a'},
+    ],
+    customers:[
+      {name:'Bharat Steel Co.',    icon:'🏭',orders:28,rev:1840000,segment:'Large'},
+      {name:'Metro Constructions', icon:'🏗️',orders:19,rev:1120000,segment:'Large'},
+      {name:'Vijay Industries',    icon:'⚙️',orders:14,rev:780000, segment:'Medium'},
+      {name:'Sunrise Fabricators', icon:'🔧',orders:11,rev:540000, segment:'Medium'},
+      {name:'Steel World Pvt Ltd', icon:'🔩',orders:8, rev:310000, segment:'Small'},
+      {name:'Allied Metals',       icon:'🏪',orders:6, rev:210000, segment:'Small'},
+    ],
+    txns:[
+      {name:'Bharat Steel Co.',    date:'Dec 18, 2024',amount:184500, type:'sale',  status:'paid'},
+      {name:'Metro Constructions', date:'Dec 16, 2024',amount:97200,  type:'sale',  status:'paid'},
+      {name:'Vijay Industries',    date:'Dec 14, 2024',amount:231000, type:'sale',  status:'pending'},
+      {name:'TATA Vendor Credit',  date:'Dec 12, 2024',amount:-58000, type:'return',status:'processed'},
+      {name:'Sunrise Fabricators', date:'Dec 10, 2024',amount:149800, type:'sale',  status:'paid'},
+      {name:'Steel World Pvt Ltd', date:'Dec 08, 2024',amount:88600,  type:'sale',  status:'overdue'},
+    ],
+  },
+  2023:{
+    monthly:{
+      labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+      revenue:[360,340,430,410,540,500,620,580,510,640,700,800],
+      target: [350,370,400,420,450,480,510,540,570,600,640,680],
+    },
+    quarterly:{
+      labels:['Q1','Q2','Q3','Q4'],
+      revenue:[1130,1450,1710,2140],
+      target: [1120,1350,1620,1920],
+    },
+    products:[
+      {name:'HR Sheet',      rev:2480000,units:1240,color:'#00d4aa'},
+      {name:'CR Sheet',      rev:1680000,units:840, color:'#5b8def'},
+      {name:'GP Sheet',      rev:1100000,units:550, color:'#f5c842'},
+      {name:'MS Plate',      rev:820000, units:410, color:'#a78bfa'},
+      {name:'Angle/Channel', rev:500000, units:250, color:'#ff5c6a'},
+    ],
+    customers:[
+      {name:'Bharat Steel Co.',    icon:'🏭',orders:22,rev:1560000,segment:'Large'},
+      {name:'Metro Constructions', icon:'🏗️',orders:15,rev:920000, segment:'Large'},
+      {name:'Vijay Industries',    icon:'⚙️',orders:11,rev:640000, segment:'Medium'},
+      {name:'Sunrise Fabricators', icon:'🔧',orders:9, rev:430000, segment:'Medium'},
+      {name:'Steel World Pvt Ltd', icon:'🔩',orders:6, rev:260000, segment:'Small'},
+      {name:'Allied Metals',       icon:'🏪',orders:5, rev:170000, segment:'Small'},
+    ],
+    txns:[
+      {name:'Bharat Steel Co.',    date:'Dec 18, 2023',amount:162000, type:'sale',  status:'paid'},
+      {name:'Metro Constructions', date:'Dec 16, 2023',amount:84000,  type:'sale',  status:'paid'},
+      {name:'Vijay Industries',    date:'Dec 14, 2023',amount:198000, type:'sale',  status:'pending'},
+      {name:'TATA Vendor Credit',  date:'Dec 12, 2023',amount:-48000, type:'return',status:'processed'},
+      {name:'Sunrise Fabricators', date:'Dec 10, 2023',amount:121000, type:'sale',  status:'paid'},
+      {name:'Steel World Pvt Ltd', date:'Dec 08, 2023',amount:74000,  type:'sale',  status:'overdue'},
+    ],
+  }
+};
+
+let period='monthly', year=2024;
+const clrs=['#00d4aa','#5b8def','#f5c842','#a78bfa','#ff5c6a'];
+
+function fmtCr(n){if(n>=10000000)return '₹'+(n/10000000).toFixed(2)+' Cr';if(n>=100000)return '₹'+(n/100000).toFixed(1)+' L';return '₹'+n.toLocaleString('en-IN');}
+function fmtK(n){return '₹'+n+'K';}
+function gd(){return DATA[year][period];}
+
+// ── Tooltip ──
+function showTip(e,title,val){const t=document.getElementById('tooltip');t.style.display='block';document.getElementById('ttTitle').textContent=title;document.getElementById('ttVal').textContent=val;t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-44)+'px';}
+function hideTip(){document.getElementById('tooltip').style.display='none';}
+document.addEventListener('mousemove',e=>{const t=document.getElementById('tooltip');if(t.style.display==='block'){t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-44)+'px';}});
+
+// ── Bar Chart ──
+function buildBarChart(svgId, d, W, H){
+  const svg=document.getElementById(svgId);
+  if(!svg)return;
+  const pL=42,pR=10,pT=10,pB=26,cW=W-pL-pR,cH=H-pT-pB,n=d.labels.length;
+  const maxV=Math.max(...d.revenue,...d.target)*1.18;
+  const step=cW/n, bw=step*0.52;
+  const gridLines=[0,.25,.5,.75,1].map(f=>{
+    const y=pT+cH*(1-f),val=Math.round(maxV*f);
+    return `<line class="grid-line" x1="${pL}" y1="${y}" x2="${W-pR}" y2="${y}"/>
+            <text class="axis-label" x="${pL-5}" y="${y+3}" text-anchor="end">${val>0?val+'K':''}</text>`;
+  }).join('');
+  const bars=d.revenue.map((v,i)=>{
+    const x=pL+i*step+(step-bw)/2, bh=(v/maxV)*cH, y=pT+cH-bh;
+    return `<g style="cursor:pointer" onmouseenter="showTip(event,'${d.labels[i]}','₹${v}K — ${Math.round(v/d.target[i]*100)}% of target')" onmouseleave="hideTip()">
+      <rect x="${x}" y="${pT+cH}" width="${bw}" height="0" rx="4" fill="url(#barGrad${svgId})">
+        <animate attributeName="height" from="0" to="${bh}" dur="0.5s" begin="${0.04*i}s" fill="freeze"/>
+        <animate attributeName="y" from="${pT+cH}" to="${y}" dur="0.5s" begin="${0.04*i}s" fill="freeze"/>
+      </rect></g>`;
+  }).join('');
+  const tgtPath=d.target.map((v,i)=>`${i===0?'M':'L'}${pL+i*step+step/2},${pT+cH*(1-v/maxV)}`).join(' ');
+  const labels=d.labels.map((l,i)=>`<text class="axis-label" x="${pL+i*step+step/2}" y="${H-5}" text-anchor="middle">${l}</text>`).join('');
+  svg.innerHTML=`<defs><linearGradient id="barGrad${svgId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00d4aa"/><stop offset="100%" stop-color="#00a880" stop-opacity="0.5"/></linearGradient></defs>
+    ${gridLines}${bars}<path d="${tgtPath}" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="4,4"/>${labels}`;
+}
+
+// ── KPI ──
+function buildKPI(containerId){
+  const d=gd(), totalRev=d.revenue.reduce((a,b)=>a+b,0)*1000;
+  const totalTgt=d.target.reduce((a,b)=>a+b,0)*1000;
+  const prevD=DATA[year===2024?2023:2024][period];
+  const prevRev=prevD.revenue.reduce((a,b)=>a+b,0)*1000;
+  const growth=((totalRev-prevRev)/prevRev*100).toFixed(1);
+  const bestIdx=d.revenue.indexOf(Math.max(...d.revenue));
+  const achPct=(totalRev/totalTgt*100).toFixed(1);
+  const cards=[
+    {label:'Total Revenue',  value:fmtCr(totalRev), delta:growth+'%',          dir:growth>0?'up':'down', sub:'vs previous year',     icon:'💰',glow:'#00d4aa',bg:'rgba(0,212,170,0.1)'},
+    {label:'Target Achieved',value:achPct+'%',        delta:(achPct>=100?'On track':'Below target'), dir:achPct>=100?'up':'down', sub:fmtCr(totalTgt)+' target', icon:'🎯',glow:'#f5c842',bg:'rgba(245,200,66,0.1)'},
+    {label:'Best Period',    value:d.labels[bestIdx], delta:'₹'+d.revenue[bestIdx]+'K',  dir:'up', sub:'highest revenue period',  icon:'🏆',glow:'#a78bfa',bg:'rgba(167,139,250,0.1)'},
+    {label:'Avg Per Period', value:'₹'+Math.round(d.revenue.reduce((a,b)=>a+b,0)/d.revenue.length)+'K', delta:growth+'% YoY', dir:growth>0?'up':'down', sub:'across all periods', icon:'📈',glow:'#5b8def',bg:'rgba(91,141,239,0.1)'},
+  ];
+  document.getElementById(containerId).innerHTML=cards.map(c=>`
+    <div class="kpi-card">
+      <div class="kpi-glow" style="background:${c.glow}"></div>
+      <div class="kpi-top"><div class="kpi-label">${c.label}</div><div class="kpi-icon" style="background:${c.bg}">${c.icon}</div></div>
+      <div class="kpi-value">${c.value}</div>
+      <div class="kpi-delta ${c.dir}">${c.dir==='up'?'▲':'▼'} ${c.delta}</div>
+      <div class="kpi-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+// ── Donut ──
+function buildDonut(){
+  const prods=DATA[year].products, total=prods.reduce((s,p)=>s+p.rev,0);
+  const cx=65,cy=65,r=48,ir=30; let angle=-Math.PI/2, paths='';
+  prods.forEach((p,i)=>{
+    const sl=(p.rev/total)*2*Math.PI;
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sl),y2=cy+r*Math.sin(angle+sl);
+    const ix1=cx+ir*Math.cos(angle),iy1=cy+ir*Math.sin(angle);
+    const ix2=cx+ir*Math.cos(angle+sl),iy2=cy+ir*Math.sin(angle+sl);
+    const lg=sl>Math.PI?1:0;
+    paths+=`<path d="M${ix1},${iy1} L${x1},${y1} A${r},${r} 0 ${lg} 1 ${x2},${y2} L${ix2},${iy2} A${ir},${ir} 0 ${lg} 0 ${ix1},${iy1}" fill="${clrs[i]}" opacity="0.85" style="cursor:pointer" onmouseenter="showTip(event,'${p.name}','${fmtCr(p.rev)} — ${Math.round(p.rev/total*100)}%')" onmouseleave="hideTip()"/>`;
+    angle+=sl;
+  });
+  document.getElementById('donutSvg').innerHTML=paths;
+  document.getElementById('donutTotal').textContent='₹'+(total/10000000).toFixed(1)+'Cr';
+  document.getElementById('donutLegend').innerHTML=prods.map((p,i)=>{
+    const pct=Math.round(p.rev/total*100);
+    return `<div class="dl-item"><div class="dl-left"><div class="dl-dot" style="background:${clrs[i]}"></div>${p.name}</div><div class="dl-bar-wrap"><div class="dl-bar" style="width:${pct}%;background:${clrs[i]}"></div></div><div class="dl-pct">${pct}%</div></div>`;
+  }).join('');
+}
+
+// ── Top Products ──
+function buildTopProducts(){
+  const prods=DATA[year].products, maxR=prods[0].rev;
+  document.getElementById('topProducts').innerHTML=prods.map((p,i)=>`
+    <div class="prod-item">
+      <div class="prod-rank">${i+1}</div>
+      <div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-units">${p.units.toLocaleString()} MT sold</div></div>
+      <div class="prod-bar-wrap"><div class="prod-bar" style="width:${Math.round(p.rev/maxR*100)}%;background:${clrs[i]}"></div></div>
+      <div class="prod-rev">${fmtCr(p.rev)}</div>
+    </div>`).join('');
+}
+
+// ── All Products (Products view) ──
+function buildAllProducts(){
+  const prods=DATA[year].products, total=prods.reduce((s,p)=>s+p.rev,0), maxR=prods[0].rev;
+  document.getElementById('allProducts').innerHTML=prods.map((p,i)=>`
+    <div class="prod-item" style="padding:14px 0">
+      <div class="prod-rank" style="width:24px;font-size:13px">${i+1}</div>
+      <div class="prod-info">
+        <div class="prod-name" style="font-size:13px">${p.name}</div>
+        <div class="prod-units">${p.units.toLocaleString()} MT · ${Math.round(p.rev/total*100)}% of revenue</div>
+      </div>
+      <div class="prod-bar-wrap" style="width:120px"><div class="prod-bar" style="width:${Math.round(p.rev/maxR*100)}%;background:${clrs[i]}"></div></div>
+      <div class="prod-rev" style="min-width:70px">${fmtCr(p.rev)}</div>
+    </div>`).join('');
+}
+
+// ── Transactions ──
+function buildTxns(){
+  const txns=DATA[year].txns;
+  const statusColors={paid:'var(--emerald)',pending:'var(--gold)',processed:'var(--blue)',overdue:'var(--red)'};
+  const iconBgs={sale:'rgba(0,212,170,0.1)',return:'rgba(255,92,106,0.1)'};
+  document.getElementById('recentTxns').innerHTML=txns.map(t=>`
+    <div class="txn-item">
+      <div class="txn-avatar" style="background:${iconBgs[t.type]}">${t.type==='sale'?'🧾':'↩️'}</div>
+      <div class="txn-info"><div class="txn-name">${t.name}</div><div class="txn-date">${t.date}</div></div>
+      <div style="display:flex;align-items:center;gap:7px">
+        <div class="status-dot" style="background:${statusColors[t.status]}"></div>
+        <div class="txn-amount ${t.amount>0?'pos':'neg'}">${t.amount>0?'+':''}₹${Math.abs(t.amount).toLocaleString('en-IN')}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Monthly Table ──
+function buildMonthlyTable(){
+  const d=DATA[year].monthly;
+  document.getElementById('monthlyTable').innerHTML=`
+    <thead><tr><th>Month</th><th>Revenue</th><th>Target</th><th>Achievement</th><th>vs Target</th></tr></thead>
+    <tbody>${d.labels.map((l,i)=>{
+      const r=d.revenue[i],t=d.target[i],pct=Math.round(r/t*100),diff=r-t;
+      return `<tr>
+        <td style="font-weight:600;color:var(--ink)">${l} ${year}</td>
+        <td style="color:var(--emerald);font-weight:600">₹${r}K</td>
+        <td>₹${t}K</td>
+        <td><span class="${pct>=100?'hit':'miss'}">${pct}%</span></td>
+        <td class="${diff>=0?'hit':'miss'}">${diff>=0?'+':''}₹${diff}K</td>
+      </tr>`;
+    }).join('')}</tbody>`;
+}
+
+// ── Targets ──
+function buildTargets(){
+  const d=gd();
+  document.getElementById('targetsContent').innerHTML=d.labels.map((l,i)=>{
+    const r=d.revenue[i],t=d.target[i],pct=Math.min(Math.round(r/t*100),100),hit=r>=t;
+    return `<div class="target-item">
+      <div class="target-top">
+        <div class="target-name">${l} ${year}</div>
+        <div class="target-vals">₹${r}K / ₹${t}K</div>
+      </div>
+      <div class="target-bar-bg"><div class="target-bar-fill" style="width:${pct}%;background:${hit?'var(--emerald)':'var(--red)'}"></div></div>
+      <div class="target-pct" style="color:${hit?'var(--emerald)':'var(--red)'}">${hit?'✓':'✗'} ${Math.round(r/t*100)}% achieved</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Customers ──
+function buildCustomers(){
+  const customers=DATA[year].customers;
+  const segColors={Large:'rgba(0,212,170,0.12)',Medium:'rgba(91,141,239,0.12)',Small:'rgba(167,139,250,0.12)'};
+  const segText={Large:'var(--emerald)',Medium:'var(--blue)',Small:'var(--purple)'};
+  document.getElementById('customersContent').innerHTML=customers.map(c=>`
+    <div class="cust-item">
+      <div class="cust-avatar" style="background:${segColors[c.segment]}">${c.icon}</div>
+      <div class="cust-info">
+        <div class="cust-name">${c.name}</div>
+        <div class="cust-detail">${c.orders} orders · <span style="color:${segText[c.segment]}">${c.segment}</span></div>
+      </div>
+      <div class="cust-rev">
+        <div class="cust-amount">${fmtCr(c.rev)}</div>
+        <div class="cust-orders">total revenue</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Sidebar toggle ──
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarOverlay').classList.toggle('active');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');}
+
+// ── View switcher ──
+const viewTitles={dashboard:'Dashboard',revenue:'Revenue',products:'Products',monthly:'Monthly Report',targets:'Targets',customers:'Customers'};
+function setView(view,el){
+  closeSidebar();
+  document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('topbarTitle').textContent=viewTitles[view]||view;
+  if(view==='revenue'){buildKPI('kpiGrid2');buildBarChart('revenueChart2',gd(),700,220);}
+  if(view==='products') buildAllProducts();
+  if(view==='monthly') buildMonthlyTable();
+  if(view==='targets') buildTargets();
+  if(view==='customers') buildCustomers();
+}
+
+// ── Period & Year ──
+function setPeriod(p,el){period=p;document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');rebuildDashboard();}
+function rebuildAll(){year=parseInt(document.getElementById('yearSelect').value);rebuildDashboard();}
+function rebuildDashboard(){buildKPI('kpiGrid');buildBarChart('revenueChart',gd(),580,190);buildDonut();buildTopProducts();buildTxns();}
+
+// ── Init ──
+rebuildDashboard();
+</script>
+</body>
+</html>
